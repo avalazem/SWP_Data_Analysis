@@ -1,0 +1,4 @@
+# Ignore raw data
+single-word-processing/
+# Ignore contrast images
+contrasts/
