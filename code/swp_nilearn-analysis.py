@@ -13,8 +13,6 @@ GLM_PARAMS = {
     "hrf_model": "spm",
     "drift_model": "cosine",
     "high_pass": 0.01,
-    "n_jobs": -1,  # For parallel processing, use all CPU cores available
-    "minimize_memory": True,  # Use memory-efficient mode
 }
 
 # Argument parser setup
