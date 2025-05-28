@@ -1,16 +1,5 @@
 from nilearn.glm.first_level import FirstLevelModel
 
-
-# Default GLM parameters
-GLM_PARAMS = {
-    "t_r": 1.81,
-    "noise_model": "ar1",
-    "standardize": False,
-    "hrf_model": "spm",
-    "drift_model": "cosine",
-    "high_pass": 0.01,
-}
-
 def fit_glm_model(func_files, events_dfs, confound_dfs_list, glm_params):
     """Fits the GLM and returns the model and the design matrix. Handles multiple runs by concatenation."""
     print("Fitting GLM model...")
