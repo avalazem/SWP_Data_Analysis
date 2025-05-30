@@ -101,17 +101,192 @@ def create_main_event_files(RUN_DIR, DATA_DIR, SUBJECT_ID, RUN_NUM):
     
     
     
-    
-RUN_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/run_csvs/SWP_Pilot_1/SWP_Pilot_1/main-exp/"
-DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs"
-
-for i in range(1, 7):
-    create_main_event_files(Path(RUN_DIR), Path(DATA_DIR), SUBJECT_ID = 'sub01', RUN_NUM = str(i))
-
-
 
 def create_visual_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
-    visual_stim_df = pd.read_csv(CSV_PATH)
+    visual_stim_df_raw = pd.read_csv(CSV_PATH)
     
-    visual_stim_df['cond']
+    # Create a new DataFrame with the required columns 
+    visual_stim_df = pd.DataFrame()
+    visual_stim_df['trial_type'] = visual_stim_df_raw['cond']
     
+    # Set a fixed duration of 6 seconds for all trials
+    visual_stim_df['duration'] = 6
+    
+    # Set the initial delay for the first trial
+    initial_delay = 6
+    
+    # Set rest time between trials
+    rest_time = 6
+    
+    # Initialize onset times list
+    onset_times = [initial_delay] 
+
+    # Calculate base onset times (initial 6s delay + cumulative sum of previous trial durations)
+    for i in range(1, len(visual_stim_df)):
+        # The next onset is the previous onset + previous duration
+        next_onset = onset_times[i-1] + visual_stim_df.at[i-1, 'duration'] + rest_time
+        onset_times.append(next_onset)
+    
+    visual_stim_df['onset'] = onset_times
+
+    # Reorder columns
+    visual_stim_df = visual_stim_df[['onset', 'duration', 'trial_type']]
+
+    # Define the output path for the tsv file
+    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_visual_localizer_events.tsv')
+    
+    # Save the DataFrame to a tsv file
+    visual_stim_df.to_csv(output_path, sep='\t', index=False)
+
+    print(f"Visual localizer event file created: {output_path}")
+
+
+def create_auditory_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+    auditory_stim_df_raw = pd.read_csv(CSV_PATH)
+    
+    # Create a new DataFrame with the required columns 
+    auditory_stim_df = pd.DataFrame()
+    auditory_stim_df['onset'] = auditory_stim_df_raw['onset']/ 1000  # Convert ms to seconds
+    
+    auditory_stim_df['trial_type'] = auditory_stim_df_raw['stim'].str[:-6]
+    
+    # Assign duration based on trial_type
+    auditory_stim_df['duration'] = auditory_stim_df['trial_type'].apply(lambda x: 2.0 if x == 'scrambled_words' else 1.0)
+    
+    # Ensure the trial_type column is properly assigned and reorder if necessary
+    # If 'onset', 'duration', 'trial_type' are the only columns desired in a specific order:
+    auditory_stim_df = auditory_stim_df[['onset', 'duration', 'trial_type']]
+
+    
+    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_auditory_localizer_events.tsv')
+    
+    # Save the DataFrame to a tsv file
+    auditory_stim_df.to_csv(output_path, sep='\t', index=False)
+    
+    print(f"Auditory localizer event file created: {output_path}")
+    
+
+def create_hand_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+    hand_stim_df_raw = pd.read_csv(CSV_PATH)
+    # Create a new DataFrame with the required columns
+    hand_stim_df = pd.DataFrame()
+    
+    hand_stim_df['onset'] = hand_stim_df_raw['onset'] / 1000  # Convert ms to seconds
+    hand_stim_df['trial_type'] = hand_stim_df_raw['stim'].str[:-4]  # Remove the last 4 characters
+    hand_stim_df['type'] = hand_stim_df_raw['type']  # Keep the type column for calculating duratuib
+    
+    # Remove irrelevant rows
+    hand_stim_df = hand_stim_df[hand_stim_df['type'] != 'blank']
+    hand_stim_df = hand_stim_df[hand_stim_df['trial_type'] != 'write']
+    
+    # Rename all trial_type values that are not 'finger' to 'write' (i.e., words)
+    hand_stim_df.loc[hand_stim_df['trial_type'] != 'finger', 'trial_type'] = 'write'
+    
+    # Assign duration based on trial_type
+    # ATTN !! Intentionally including cue + fixation due to ambiguity in task design given to subjects
+    # In the future it needs to be clear when the subject is to perform the task and when they are to just look at the screen
+    # first 1 second is included to account for cue duration
+    # Assign duration by row based on trial_type
+    def assign_duration(row):
+        if row['trial_type'] == 'finger':
+            return 14.0
+        elif row['trial_type'] == 'write':
+            return 11.0
+
+    
+    hand_stim_df['duration'] = hand_stim_df.apply(assign_duration, axis=1)
+    
+    # Reorder columns to match the desired output
+    hand_stim_df = hand_stim_df[['onset', 'duration', 'trial_type']]
+
+    # Drop rows with missing trial_type, if any
+    hand_stim_df = hand_stim_df.dropna(subset=['trial_type'])
+    
+    
+    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_hand_localizer_events.tsv')
+    
+    # Save the DataFrame to a tsv file
+    hand_stim_df.to_csv(output_path, sep='\t', index=False)
+    print(f"Hand localizer event file created: {output_path}")
+
+
+def create_speech_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+    speech_stim_df_raw = pd.read_csv(CSV_PATH)
+    # Create a new DataFrame with the required columns
+    speech_stim_df = pd.DataFrame()
+    
+    speech_stim_df['onset'] = speech_stim_df_raw['onset'] / 1000  # Convert ms to seconds
+    speech_stim_df['trial_type'] = speech_stim_df_raw['stim'].str[:-4]  # Remove the last 4 characters
+    speech_stim_df['type'] = speech_stim_df_raw['type']  # Keep the type column for calculating duratuib
+    
+    # Remove irrelevant rows
+    speech_stim_df = speech_stim_df[speech_stim_df['type'] != 'blank']
+    speech_stim_df = speech_stim_df[speech_stim_df['trial_type'] != 'speech']
+    
+    # Rename all trial_type values that are not 'hum' to 'speech' (i.e., words)
+    speech_stim_df.loc[speech_stim_df['trial_type'] != 'hum', 'trial_type'] = 'speech'
+    
+    # Assign duration based on trial_type
+    # ATTN !! Intentionally including cue + fixation due to ambiguity in task design given to subjects
+    # In the future it needs to be clear when the subject is to perform the task and when they are to just look at the screen
+    # first 1 second is included to account for cue duration
+    # Assign duration by row based on trial_type
+    def assign_duration(row):
+        if row['trial_type'] == 'hum':
+            return 14.0
+        elif row['trial_type'] == 'speech':
+            return 5.0
+
+    
+    speech_stim_df['duration'] = speech_stim_df.apply(assign_duration, axis=1)
+    
+    # Reorder columns to match the desired output
+    speech_stim_df = speech_stim_df[['onset', 'duration', 'trial_type']]
+
+    # Drop rows with missing trial_type, if any
+    speech_stim_df = speech_stim_df.dropna(subset=['trial_type'])
+    
+    
+    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_speech_localizer_events.tsv')
+    
+    # Save the DataFrame to a tsv file
+    speech_stim_df.to_csv(output_path, sep='\t', index=False)
+    print(f"Speech localizer event file created: {output_path}")
+
+# Run functions as desired
+
+
+# RUN_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/run_csvs/SWP_Pilot_1/SWP_Pilot_1/main-exp/"
+# DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs"
+
+# for i in range(1, 7):
+#     create_main_event_files(Path(RUN_DIR), Path(DATA_DIR), SUBJECT_ID = 'sub01', RUN_NUM = str(i))
+
+
+
+
+# create_visual_localizer_event_files(
+#     CSV_PATH = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/visual_categories/sub1_vis.csv",
+#     DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
+#     SUBJECT_ID = 'sub1'
+# )
+
+# create_auditory_localizer_event_files(
+#     CSV_PATH = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/audio_categories/sub1_audio.csv",
+#     DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
+#     SUBJECT_ID = 'sub1'
+# )
+
+# create_hand_localizer_event_files(
+#     CSV_PATH = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/hand_categories/sub1_hand.csv",
+#     DATA_DIR = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
+#     SUBJECT_ID = 'sub1'
+# )
+
+
+# create_speech_localizer_event_files(
+#     CSV_PATH = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/speech_categories/sub1_speech.csv",
+#     DATA_DIR = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
+#     SUBJECT_ID = 'sub1'
+# )
+
