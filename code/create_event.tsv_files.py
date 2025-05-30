@@ -110,13 +110,13 @@ def create_visual_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     visual_stim_df['trial_type'] = visual_stim_df_raw['cond']
     
     # Set a fixed duration of 6 seconds for all trials
-    visual_stim_df['duration'] = 6
+    visual_stim_df['duration'] = 6.0
     
     # Set the initial delay for the first trial
-    initial_delay = 6
+    initial_delay = 6.0
     
     # Set rest time between trials
-    rest_time = 6
+    rest_time = 6.0
     
     # Initialize onset times list
     onset_times = [initial_delay] 
