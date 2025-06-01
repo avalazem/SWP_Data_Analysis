@@ -1,75 +1,129 @@
-from pathlib import Path
-
-from utils import (
-    setup_paths_and_load_data
-)
+import pickle
+import os
+from nilearn.glm import threshold_stats_img
+from nilearn.plotting import plot_stat_map
+from nilearn.plotting import plot_glass_brain
+import matplotlib.pyplot as plt
+import numpy as np
 
 from viz import (
     plot_design_matrix_to_file,
     plot_contrast_matrix_to_file,
-    plot_diagnostic_images_to_file,
-    compute_threshold_plot_stat_maps_to_file
 )
 
-from compute_contrast import load_contrast_vector
 
-from compute_model import fit_glm_model
+from nilearn.glm.first_level import FirstLevelModel
 
 
 # Main first-level analysis function for a single subject, multiple runs (concatenated), and contrast
 
-def run_first_level_analysis(subject_id, run_ids, contrast_name, output_dir_base, alpha_levels, project_root_dir, glm_params): # Added run_ids
+def fit_GLM(fns_func, dfs_events, dfs_confounds,
+            glm_params, path2root, save_model=True,
+            plot_design_matrix=False): # Added run_ids
     """
     Performs first-level fMRI analysis for a given subject, concatenating specified runs, for a given contrast.
     """
-    if not isinstance(run_ids, list):
-        run_ids = [run_ids] # Ensure run_ids is a list, even if a single run number is passed
-
-    runs_label_str = "_".join(map(lambda r: f"{r}", run_ids))
-    print(f"--- Starting Analysis for Subject: {subject_id}, Runs: {runs_label_str}, Contrast: {contrast_name} ---")
-
-    # 0. Setup output directory and base filename
-    output_dir_base_path = Path(output_dir_base)
-    # Per-analysis (potentially multi-run) output directory
-    analysis_specific_output_dir = output_dir_base_path / f"sub-{subject_id:02d}" / f"{contrast_name.replace(' ', '_')}"
-    analysis_specific_output_dir.mkdir(exist_ok=True, parents=True)
     
-    contrast_name_safe = contrast_name.replace(">", "_vs_") # Used for filenames
-    base_fn_name_prefix = f"sub-{subject_id:02d}_{contrast_name_safe}"
-    base_output_filepath_prefix = analysis_specific_output_dir / base_fn_name_prefix
+    path2output = os.path.join(path2root, "output")
+    fn_glm = fns_func[0].split('/')[-1].replace('.nii.gz', '_glm.pkl')  # Use the first functional file name for GLM
+    fmri_glm_file = os.path.join(path2output, fn_glm)
+    if os.path.exists(fmri_glm_file):
+        print(f"GLM model already exists at {fmri_glm_file}. Loading existing model...")
+        with open(fmri_glm_file, 'rb') as f:
+            fmri_glm = pickle.load(f)
+        return fmri_glm    
 
-    # 1. Load Data for all specified runs
-    data_loaded = setup_paths_and_load_data(subject_id, run_ids, project_root_dir)
-    if not data_loaded:
-        print(f"ERROR: Data loading failed for sub-{subject_id}, runs-{runs_label_str}. Skipping analysis.")
-        return
-    
-    # 2. Fit GLM (fit_glm_model should accept lists of func_files, events_dfs), and confound_dfs_list
-    fmri_glm, design_matrix = fit_glm_model(data_loaded["func_files"], data_loaded["events_dfs"], data_loaded["confound_data"], glm_params)
-    
-    
-    # 3. Plot Design Matrix
-    dm_plot_path = base_output_filepath_prefix.with_suffix(".design_matrix.png")
-    plot_design_matrix_to_file(design_matrix, dm_plot_path)
+    # Fit GLM (fit_glm_model should accept lists of func_files, events_dfs), and confound_dfs_list
+    print("Fitting GLM model...")
+    fmri_glm = FirstLevelModel(**glm_params)
+    fmri_glm.fit(fns_func, dfs_events, dfs_confounds)
+    print("  GLM fitting complete. Design matrix extracted.")
 
-    # 4. Define and Plot Contrast
-    contrast_vector = load_contrast_vector(contrast_name, design_matrix)
-    cm_plot_path = base_output_filepath_prefix.with_suffix(".contrast_matrix.png")
-    plot_contrast_matrix_to_file(contrast_vector, design_matrix, cm_plot_path)
+    if save_model:
+        # Create output directory if it doesn't exist
+        
+        os.makedirs(path2output, exist_ok=True)
+        
+        # Save the fitted model
+        with open(fmri_glm_file, 'wb') as f:
+            pickle.dump(fmri_glm, f)
+        
+        print(f"Fitted GLM model saved to {fmri_glm_file}")
 
-    # 5. Plot Diagnostic Images (Mean Func, Anat)
-    plot_diagnostic_images_to_file(data_loaded["mean_func_img"], data_loaded["anat_file"], base_output_filepath_prefix)
 
-    # 6. Compute, Threshold, and Plot Statistical Maps
-    # Using the first alpha for simplicity, can be extended to loop through alpha_levels
-    current_alpha = alpha_levels[0] 
-    cluster_threshold = 10 # Default, consider making it an argument if it varies
+    if plot_design_matrix:
+        # Plot the design matrix
+        path2figures = os.path.join(path2root, "figures")
+        fn_design_matrix = fns_func[0].split('/')[-1].replace('.nii.gz', '_design_matrix.png')  # Use the first functional file name for GLM
+        design_matrix = fmri_glm.design_matrices_[0]
+        dm_plot_path = os.path.join(path2figures, fn_design_matrix)
+        plot_design_matrix_to_file(design_matrix, dm_plot_path)
+
     
-    compute_threshold_plot_stat_maps_to_file(
-        fmri_glm, contrast_vector, contrast_name, contrast_name_safe, 
-        data_loaded["mean_func_img"], current_alpha, cluster_threshold, 
-        base_output_filepath_prefix
+    return fmri_glm
+   
+def plot_contrast(fmri_glm, contrast_name, contrast_vector,
+                   mean_func_img, anat_file, path2root,
+                     current_alpha=0.05, cluster_threshold=10, save_plots=True):
+    """
+    Plots the contrast for the fitted GLM model.
+    """
+
+    contrast_vector = np.array(contrast_vector)  # Ensure it's a numpy array
+    
+
+    fn_contrast_matrix = f"{contrast_name}_contrast_matrix.png"
+    cm_plot_path = os.path.join(path2root, "figures", fn_contrast_matrix)
+    plot_contrast_matrix_to_file(contrast_vector, fmri_glm.design_matrices_[0], cm_plot_path)
+    
+    
+    # Compute and plot statistical maps
+    print("Computing and plotting statistical maps...")
+    # Compute z-map
+    z_map = fmri_glm.compute_contrast(contrast_vector, output_type="z_score")
+    print(f"  Z-map computed for contrast: {contrast_name}")
+
+    # Threshold the z-map
+    print(f"  Thresholding z-map with alpha={current_alpha}, cluster_threshold={cluster_threshold}...")
+    
+    clean_map, threshold = threshold_stats_img(
+        z_map, 
+        alpha=current_alpha, 
+        height_control="fdr",
+        cluster_threshold=cluster_threshold, 
+        two_sided=False,
     )
+    print(f"  Thresholded map generated. Threshold value: {threshold:.3f}")
+
+    # Plot stat map
+    stat_map_plotting_config = {"bg_img": mean_func_img, 
+                                "display_mode": "z", 
+                                "cut_coords": 3, 
+                                "black_bg": True}
+    title_stat_map = (f"{contrast_name} (p<{current_alpha:.3f} FDR; thresh: {threshold:.3f}; clusters > {cluster_threshold} voxels)")
     
-    print(f"--- Finished Analysis for Subject: {subject_id}, Contrast: {contrast_name} ---\n")
+    stat_map_filepath = os.path.join(path2root, "figures", f"stat_map_alpha{current_alpha}.png")
+    plot_stat_map(clean_map, threshold=threshold, 
+                  title=title_stat_map,
+                  figure=plt.figure(figsize=(10, 4)), 
+                  output_file=stat_map_filepath,
+                  **stat_map_plotting_config)
+    print(f"  Statistical map saved to {stat_map_filepath}")
+
+    # Plot glass brain
+    glass_brain_plotting_config = {"display_mode": "ortho", 
+                                   "cut_coords": (0,0,0), 
+                                   "colorbar": True, 
+                                   "annotate": True, 
+                                   "draw_cross": False, 
+                                   "black_bg": False}
+    
+    fn_glass_brain = f"glass_brain_alpha{current_alpha}.png"
+    glass_brain_filepath = os.path.join(path2root, "figures", fn_glass_brain)
+    plot_glass_brain(clean_map, threshold=threshold, 
+                     title=title_stat_map, 
+                     output_file=glass_brain_filepath,
+                     **glass_brain_plotting_config)
+    print(f"  Glass brain plot saved to {glass_brain_filepath}")
+    plt.close('all')
 

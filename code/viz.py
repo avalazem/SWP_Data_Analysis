@@ -1,10 +1,11 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
 from nilearn.plotting import plot_design_matrix as nilearn_plot_design_matrix
 from nilearn.plotting import plot_contrast_matrix as nilearn_plot_contrast_matrix
 from nilearn.plotting import plot_anat, plot_img, plot_stat_map
 from nilearn.glm import threshold_stats_img
 from nilearn.plotting import plot_glass_brain
-
+from nilearn.image import mean_img
 
 def plot_design_matrix_to_file(design_matrix, output_filepath):
     """Plots the design matrix and saves it to a file."""
@@ -22,9 +23,12 @@ def plot_contrast_matrix_to_file(contrast_vector, design_matrix, output_filepath
     print("  Contrast matrix plot saved.")
     
     
-def plot_diagnostic_images_to_file(mean_func_img, anat_file, base_output_filepath_prefix):
+def plot_diagnostic_images_to_file(mean_func_img, anat_file, path2root):
     """Plots and saves mean functional and anatomical images."""
     print("Plotting diagnostic images...")
+    base_output_filepath_prefix = Path(path2root) / "figures" / "diagnostic_images"
+    base_output_filepath_prefix.mkdir(parents=True, exist_ok=True)
+    
     plot_img(mean_func_img, 
              colorbar=True, 
              cbar_tick_format="%i", 
