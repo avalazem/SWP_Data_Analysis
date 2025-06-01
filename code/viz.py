@@ -61,7 +61,7 @@ def compute_threshold_plot_stat_maps_to_file(fmri_glm, contrast_vector, original
                                 "display_mode": "z", 
                                 "cut_coords": 3, 
                                 "black_bg": True}
-    title_stat_map = (f"{original_contrast_name} (p<{current_alpha:.3f} FDR; thresh: {threshold:.3f}; clusters > {cluster_threshold})")
+    title_stat_map = (f"{original_contrast_name} (p<{current_alpha:.3f} FDR; thresh: {threshold:.3f}; clusters > {cluster_threshold} voxels)")
     
     stat_map_filepath = base_output_filepath_prefix.with_suffix(f".stat_map_alpha{current_alpha}.png")
     plot_stat_map(clean_map, threshold=threshold, 
