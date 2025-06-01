@@ -17,9 +17,9 @@ GLM_PARAMS = {
 
 # Argument parser setup
 parser = argparse.ArgumentParser(description="Process fMRI data for a single subject and run.")
-parser.add_argument("--subject", type=int, required=True, help="Subject number (e.g., 1)")
-parser.add_argument("--run", type=int, required=False, help="Run number (e.g., 1). If not provided, all runs (1-6) will be processed.")
-parser.add_argument("--contrast", type=str, required=True, help="Contrast name (e.g., 'visual>auditory')")
+parser.add_argument(--subject, default=1, type=int, required=True, help="Subject number (e.g., 1)")
+parser.add_argument("--run", default=None, type=int, required=False, help="Run number (e.g., 1). If not provided, all runs (1-6) will be processed.")
+parser.add_argument("--contrast", default='aud_vs_vis', type=str, required=True, help="Contrast name (e.g., 'visual>auditory')")
 parser.add_argument("--output_dir", type=str, default="results", help="Base output directory for results")
 parser.add_argument("--alpha", type=float, nargs='+', default=[0.05], help="Alpha levels for thresholding")
 parser.add_argument("--num_runs", type=int, default=6, help="Total number of runs if --run is not specified.")
