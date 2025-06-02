@@ -1,6 +1,6 @@
 {
     "aud_gt_viz": {
-      "name": "Visual vs Auditory",
+      "name": "Audiotory > Visual",
       "weights": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       "description": "Contrast comparing visual and auditory conditions",
       "colors": ["blue", "red"]
@@ -11,16 +11,22 @@
         "description": "Contrast comparing auditory conditions greater than visual conditions",
         "colors": ["red", "blue"]
     },
-    "stim_vs_baseline": {
-      "name": "Stimulation vs Baseline",
-      "weights": [0.5, 0.5, -1, 0, 0, 0],
+    "loc_words_vs_faces_vis": {
+      "name": "Localizer",
+      "weights": [-1, -1, -1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       "description": "Contrast comparing stimulation conditions against baseline",
       "colors": ["green", "grey"]
     },
-    "motor_left_vs_right": {
-      "name": "Motor Left vs Right",
-      "weights": [0, 0, 1, -1, 0, 0],
-      "description": "Contrast for left vs right motor tasks",
-      "colors": ["orange", "purple"]
+      "loc_words_vs_faces_aud": {
+        "name": "Localizer",
+        "weights": [-1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "description": "Contrast comparing stimulation conditions against baseline",
+        "colors": ["green", "grey"]
+    },
+    "loc_words_vs_scrambled_words_aud": {
+      "name": "Localizer Words vs Scrambled Words Auditory",
+      "weights": [0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast for localizer comparing words against scrambled words in auditory conditions",
+      "colors": ["blue", "red"]
     }
   }

@@ -1,4 +1,4 @@
-from pathlib import Path
+import os
 import matplotlib.pyplot as plt
 from nilearn.plotting import plot_design_matrix as nilearn_plot_design_matrix
 from nilearn.plotting import plot_contrast_matrix as nilearn_plot_contrast_matrix
@@ -23,21 +23,26 @@ def plot_contrast_matrix_to_file(contrast_vector, design_matrix, output_filepath
     print("  Contrast matrix plot saved.")
     
     
-def plot_diagnostic_images_to_file(mean_func_img, anat_file, path2root):
+def plot_diagnostic_images_to_file(exp_args, mean_func_img, anat_file, path2root):
     """Plots and saves mean functional and anatomical images."""
+    # Build file and folder names based on experiment arguments
+    subject_id, session, task = exp_args['subject'], exp_args['session'], exp_args['task']
+    fn_base = f"sub-{subject_id:02d}_ses-{session}_task-{task}"
     print("Plotting diagnostic images...")
-    base_output_filepath_prefix = Path(path2root) / "figures" / "diagnostic_images"
-    base_output_filepath_prefix.mkdir(parents=True, exist_ok=True)
+    folder_figures = os.path.join(path2root, "figures", f"sub-{subject_id:02d}_ses-{session}", "diagnostic_images")
+    os.makedirs(folder_figures, exist_ok=True)
+    print(f"  Saving diagnostic images to {folder_figures}...")
     
+    # Plot mean functional and anatomical images
     plot_img(mean_func_img, 
              colorbar=True, 
              cbar_tick_format="%i", 
              cmap="gray",
-             output_file=base_output_filepath_prefix.with_suffix(".mean_func_img.png"))
+             output_file=os.path.join(folder_figures, f"{fn_base}_mean_func_img.png"))
     plot_anat(anat_file, 
               colorbar=True, 
               cbar_tick_format="%i",
-              output_file=base_output_filepath_prefix.with_suffix(".anat_img.png"))
+              output_file=os.path.join(folder_figures, f"{fn_base}_anat_img.png"))
     plt.close('all')
     print("  Mean functional and anatomical images saved.")
 

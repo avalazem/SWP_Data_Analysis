@@ -6,10 +6,7 @@ from nilearn.plotting import plot_glass_brain
 import matplotlib.pyplot as plt
 import numpy as np
 
-from viz import (
-    plot_design_matrix_to_file,
-    plot_contrast_matrix_to_file,
-)
+from viz import plot_design_matrix_to_file, plot_contrast_matrix_to_file
 
 
 from nilearn.glm.first_level import FirstLevelModel
@@ -62,18 +59,29 @@ def fit_GLM(fns_func, dfs_events, dfs_confounds,
     
     return fmri_glm
    
-def plot_contrast(fmri_glm, contrast_name, contrast_vector,
-                   mean_func_img, anat_file, path2root,
+def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
+                   mean_func_img, path2root,
                      current_alpha=0.05, cluster_threshold=10, save_plots=True):
     """
     Plots the contrast for the fitted GLM model.
     """
+    # build file and folder names based on experiment arguments
+    subject_id, session, task = exp_args['subject'], exp_args['session'], exp_args['task']
+    fn_base = f"contrast-{contrast_name}_sub-{subject_id:02d}_ses-{session}_task-{task}"
+    print("Plotting diagnostic images...")
+    folder_figures = os.path.join(path2root,
+                                   "figures",
+                                   f"sub-{subject_id:02d}_ses-{session}",
+                                     "contrasts")
+    os.makedirs(folder_figures, exist_ok=True)
+    print(f"  Saving Contrast images to {folder_figures}...")
 
+    # Plot design matrix
+    print(f"Plotting contrast: {contrast_name}...")
     contrast_vector = np.array(contrast_vector)  # Ensure it's a numpy array
-    
 
-    fn_contrast_matrix = f"{contrast_name}_contrast_matrix.png"
-    cm_plot_path = os.path.join(path2root, "figures", fn_contrast_matrix)
+    fn_contrast_matrix = f"contrast_matrix_{fn_base}.png"
+    cm_plot_path = os.path.join(folder_figures,  fn_contrast_matrix)
     plot_contrast_matrix_to_file(contrast_vector, fmri_glm.design_matrices_[0], cm_plot_path)
     
     
@@ -102,7 +110,7 @@ def plot_contrast(fmri_glm, contrast_name, contrast_vector,
                                 "black_bg": True}
     title_stat_map = (f"{contrast_name} (p<{current_alpha:.3f} FDR; thresh: {threshold:.3f}; clusters > {cluster_threshold} voxels)")
     
-    stat_map_filepath = os.path.join(path2root, "figures", f"stat_map_alpha{current_alpha}.png")
+    stat_map_filepath = os.path.join(folder_figures, f"stat_map_alpha{current_alpha}_{fn_base}.png")
     plot_stat_map(clean_map, threshold=threshold, 
                   title=title_stat_map,
                   figure=plt.figure(figsize=(10, 4)), 
@@ -118,8 +126,8 @@ def plot_contrast(fmri_glm, contrast_name, contrast_vector,
                                    "draw_cross": False, 
                                    "black_bg": False}
     
-    fn_glass_brain = f"glass_brain_alpha{current_alpha}.png"
-    glass_brain_filepath = os.path.join(path2root, "figures", fn_glass_brain)
+    fn_glass_brain = f"glass_brain_{contrast_name}_alpha{current_alpha}_{fn_base}.png"
+    glass_brain_filepath = os.path.join(folder_figures, fn_glass_brain)
     plot_glass_brain(clean_map, threshold=threshold, 
                      title=title_stat_map, 
                      output_file=glass_brain_filepath,
