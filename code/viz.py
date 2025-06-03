@@ -1,19 +1,30 @@
 import os
 import matplotlib.pyplot as plt
 from nilearn.plotting import plot_design_matrix as nilearn_plot_design_matrix
+from nilearn.plotting import plot_design_matrix_correlation
 from nilearn.plotting import plot_contrast_matrix as nilearn_plot_contrast_matrix
 from nilearn.plotting import plot_anat, plot_img, plot_stat_map
 from nilearn.glm import threshold_stats_img
 from nilearn.plotting import plot_glass_brain
 from nilearn.image import mean_img
 
-def plot_design_matrix_to_file(design_matrix, output_filepath):
+def plot_design_matrix_to_file(fmri_glm, exp_args, path2root):
     """Plots the design matrix and saves it to a file."""
-    print(f"Plotting design matrix to {output_filepath}...")
-    nilearn_plot_design_matrix(design_matrix, output_file=output_filepath)
+    subject_id, session, task = exp_args['subject'], exp_args['session'], exp_args['task']
+    folder_figures = os.path.join(path2root, "figures", f"sub-{subject_id:02d}_ses-{session}", "design_matrices")
+    os.makedirs(folder_figures, exist_ok=True)
+    fn_base = f"sub-{subject_id:02d}_ses-{session}_task-{task}"
+    print(f"  Saving design matrix plot to {folder_figures}...")
+    
+    design_matrix = fmri_glm.design_matrices_[0]
+    nilearn_plot_design_matrix(design_matrix, output_file=os.path.join(folder_figures,
+                                                                        f"design_matrix_{fn_base}.png"))
     plt.close() # Close the figure to free memory
-    print("  Design matrix plot saved.")
-
+    plot_design_matrix_correlation(design_matrix, 
+                                   output_file=os.path.join(folder_figures,
+                                                             f"design_matrix_correlation_{fn_base}.png"))
+    plt.close()  # Close the figure to free memory
+    
 
 def plot_contrast_matrix_to_file(contrast_vector, design_matrix, output_filepath):
     """Plots the contrast matrix and saves it to a file."""
@@ -87,6 +98,7 @@ def compute_threshold_plot_stat_maps_to_file(fmri_glm, contrast_vector, original
                                    "annotate": True, 
                                    "draw_cross": False, 
                                    "black_bg": False}
+    
     glass_brain_filepath = base_output_filepath_prefix.with_suffix(f".glass_brain_alpha{current_alpha}.png")
     plot_glass_brain(clean_map, threshold=threshold, 
                      title=title_stat_map, 

@@ -6,6 +6,7 @@ from analyses import fit_GLM
 from analyses import plot_contrast
 from utils import load_BIDS_data
 from viz import plot_diagnostic_images_to_file
+from viz import plot_design_matrix_to_file
 from contrasts import ContrastManager
 from nilearn.image import mean_img
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -17,17 +18,17 @@ parser = argparse.ArgumentParser(description="Process fMRI data for a single sub
 exp_args = parser.add_argument_group("General Processing Arguments")
 exp_args.add_argument("--subject", type=int, default=1, help="Subject number (e.g., 1)")
 exp_args.add_argument("--session", type=int, default=1, help="Session number (e.g., 1)")
-exp_args.add_argument("--task", type=str, default='locaudio', help="Task name is required in BIDS")
+exp_args.add_argument("--task", type=str, default='lochand', help="Task name is required in BIDS")
 exp_args.add_argument("--num-runs", type=int, default=None, help="Number of runs to process (default: 1)")
 
 # Contrast Arguments Group
 contrast_args = parser.add_argument_group("Contrast Arguments")
 contrast_args.add_argument("--contrast-file", type=str, default="contrasts.json", help="Path to the contrast file (default: contrasts.json)")
-contrast_args.add_argument("--contrast-name", type=str, default="loc_words_vs_scrambled_words_aud", help="Name of the contrast to analyze (default: vis_aud)")
+contrast_args.add_argument("--contrast-name", type=str, default="loc_writing_vs_rest", help="Name of the contrast to analyze (default: vis_aud)")
 
 # Statistical Thresholding Arguments Group
 stat_args = parser.add_argument_group("Statistical Thresholding Arguments")
-stat_args.add_argument("--alpha", type=float, default=0.1, help="Alpha level for statistical thresholding (default: 0.05)")
+stat_args.add_argument("--alpha", type=float, default=0.2, help="Alpha level for statistical thresholding (default: 0.05)")
 stat_args.add_argument("--cluster-threshold", type=int, default=10, help="Cluster size threshold for statistical maps (default: 10)")
 
 # Path Arguments Group
@@ -70,13 +71,16 @@ plot_diagnostic_images_to_file(exp_params,
                                 args.path2root)
 
 # FIT MODEL: GLM
-model_glm = fit_GLM(dict_BIDS_data['fns_func'],
+model_glm = fit_GLM(exp_params,
+                    dict_BIDS_data['fns_func'],
                     dict_BIDS_data['dfs_events'],
                     dict_BIDS_data['dfs_confounds'],
                     glm_params,
                     args.path2root,
-                    save_model=True,
-                    plot_design_matrix=True)
+                    save_model=True)
+
+# Plot the design matrix
+plot_design_matrix_to_file(model_glm, exp_params, args.path2root)
 
 
 # CONTRAST ANALYSIS
