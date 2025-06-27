@@ -76,8 +76,7 @@ def load_BIDS_data(exp_args, run_ids, path2root, load_confounds=False):
             fns_func.append(fn_func) # Nilearn expects strings or Niimg-like objects
             
             # Event file
-            current_events_file = os.path.join(path2root,
-                                                "event_tsvs",
+            current_events_file = os.path.join(path2subject_data,"func",
                                                 f"{fn_base}_run-{run_id:02d}_events.tsv")
             fns_events.append(current_events_file)
             dfs_events.append(pd.read_table(current_events_file))
@@ -85,9 +84,8 @@ def load_BIDS_data(exp_args, run_ids, path2root, load_confounds=False):
         fn_func = f"{fn_base}_dir-pa_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz"
         fn_func = os.path.join(path2subject_data, "func", fn_func)                                              
         fns_func.append(fn_func)
-        current_events_file = os.path.join(path2root,
-                                            "event_tsvs",
-                                            f"{fn_base}_events.tsv")
+        current_events_file = os.path.join(path2subject_data,"func",
+                                                f"{fn_base}_events.tsv")
         fns_events.append(current_events_file)
         dfs_events.append(pd.read_table(current_events_file))
         # Event file

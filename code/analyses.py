@@ -5,6 +5,7 @@ from nilearn.plotting import plot_stat_map
 from nilearn.plotting import plot_glass_brain
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.utils.validation import check_is_fitted, NotFittedError
 
 from viz import plot_design_matrix_to_file, plot_contrast_matrix_to_file
 
@@ -13,9 +14,8 @@ from nilearn.glm.first_level import FirstLevelModel
 
 
 # Main first-level analysis function for a single subject, multiple runs (concatenated), and contrast
-
 def fit_GLM(exp_args, fns_func, dfs_events, dfs_confounds,
-            glm_params, path2root, save_model=True): # Added run_ids
+            glm_params, path2root, save_model=True):
     """
     Performs first-level fMRI analysis for a given subject, concatenating specified runs, for a given contrast.
     """
@@ -25,30 +25,38 @@ def fit_GLM(exp_args, fns_func, dfs_events, dfs_confounds,
     path2output = os.path.join(path2root, "output", "glm_models")
     fn_glm = f'glm_{fn_base}.pkl'  # Use the first functional file name for GLM
     
-    # check if the GLM model already exists and load it if so
     fmri_glm_file = os.path.join(path2output, fn_glm)
+
+    needs_fitting = False
+
     if os.path.exists(fmri_glm_file):
         print(f"GLM model already exists at {fmri_glm_file}. Loading existing model...")
         with open(fmri_glm_file, 'rb') as f:
             fmri_glm = pickle.load(f)
-        return fmri_glm    
+        
+        try:
+            check_is_fitted(fmri_glm)
+            print("  Loaded model is already fitted.")
+        except NotFittedError:
+            print("  WARNING: Loaded model is not fitted. It will be re-fitted.")
+            needs_fitting = True
+    else:
+        print("No existing GLM model found. Creating and fitting a new one.")
+        fmri_glm = FirstLevelModel(**glm_params)
+        needs_fitting = True
 
-    # Fit GLM (fit_glm_model should accept lists of func_files, events_dfs), and confound_dfs_list
-    print("Fitting GLM model...")
-    fmri_glm = FirstLevelModel(**glm_params)
-    fmri_glm.fit(fns_func, dfs_events, dfs_confounds)
-    print("  GLM fitting complete. Design matrix extracted.")
-
-    if save_model:
-        # Create output directory if it doesn't exist
-        
-        os.makedirs(path2output, exist_ok=True)
-        
-        # Save the fitted model
-        with open(fmri_glm_file, 'wb') as f:
-            pickle.dump(fmri_glm, f)
-        
-        print(f"Fitted GLM model saved to {fmri_glm_file}")
+    if needs_fitting:
+        # Fit GLM (re-fit if loaded, as pickle can be unreliable for fitted state)
+        print("Fitting GLM model...")
+        fmri_glm.fit(fns_func, dfs_events, dfs_confounds)
+        print("  GLM fitting complete.")
+        if save_model:
+            # Create output directory if it doesn't exist
+            os.makedirs(path2output, exist_ok=True)
+            # Save the fitted model
+            with open(fmri_glm_file, 'wb') as f:
+                pickle.dump(fmri_glm, f)
+            print(f"Fitted GLM model saved to {fmri_glm_file}")
 
     return fmri_glm
    

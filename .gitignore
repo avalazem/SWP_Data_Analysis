@@ -1,4 +1,8 @@
 # Ignore raw data
 single-word-processing/
+data/
 # Ignore contrast images
 contrasts/
+output/
+figures/
+
