@@ -3,6 +3,7 @@ import os
 from nilearn.glm import threshold_stats_img
 from nilearn.plotting import plot_stat_map
 from nilearn.plotting import plot_glass_brain
+from nilearn.plotting import view_img_on_surf
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -87,13 +88,15 @@ def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
     # Threshold the z-map
     print(f"  Thresholding z-map with alpha={current_alpha}, cluster_threshold={cluster_threshold}...")
     
-    clean_map, threshold = threshold_stats_img(
-        z_map, 
-        alpha=current_alpha, 
-        height_control="fdr",
-        cluster_threshold=cluster_threshold, 
-        two_sided=False,
-    )
+    #clean_map, threshold = threshold_stats_img(
+    #    z_map, 
+    #    alpha=current_alpha, 
+    #    height_control="fdr",
+    #    cluster_threshold=cluster_threshold, 
+    #   two_sided=True,
+    #)
+
+    clean_map, threshold = z_map, 3.1
     print(f"  Thresholded map generated. Threshold value: {threshold:.3f}")
 
     # Plot stat map
@@ -112,7 +115,9 @@ def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
     print(f"  Statistical map saved to {stat_map_filepath}")
 
     # Plot glass brain
-    glass_brain_plotting_config = {"display_mode": "ortho", 
+    glass_brain_plotting_config = {"display_mode": "lyrz", 
+                                   "plot_abs": False,
+                                   "symmetric_cbar": True,
                                    "cut_coords": (0,0,0), 
                                    "colorbar": True, 
                                    "annotate": True, 
@@ -122,9 +127,18 @@ def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
     fn_glass_brain = f"glass_brain_alpha{current_alpha}_{fn_base}.png"
     glass_brain_filepath = os.path.join(folder_figures, fn_glass_brain)
     plot_glass_brain(clean_map, threshold=threshold, 
-                     title=title_stat_map, 
+                     title=title_stat_map,
                      output_file=glass_brain_filepath,
                      **glass_brain_plotting_config)
     print(f"  Glass brain plot saved to {glass_brain_filepath}")
+
+
+    fn_surf_brain = f"surf_brain_alpha{current_alpha}_{fn_base}.png"
+    surf_brain_filepath = os.path.join(folder_figures, fn_surf_brain)
+    view=view_img_on_surf(clean_map, 
+                     threshold='90%',
+                     surf_mesh='fsaverage')
+    
+    view.save_as_html(f"{surf_brain_filepath}.html")
     plt.close('all')
 

@@ -16,15 +16,15 @@ parser = argparse.ArgumentParser(description="Process fMRI data for a single sub
 
 # General Processing Arguments Group
 exp_args = parser.add_argument_group("General Processing Arguments")
-exp_args.add_argument("--subject", type=int, default=1, help="Subject number (e.g., 1)")
+exp_args.add_argument("--subject", type=int, default=2, help="Subject number (e.g., 1)")
 exp_args.add_argument("--session", type=int, default=1, help="Session number (e.g., 1)")
-exp_args.add_argument("--task", type=str, default='lochand', help="Task name is required in BIDS")
-exp_args.add_argument("--num-runs", type=int, default=None, help="Number of runs to process (default: 1)")
+exp_args.add_argument("--task", type=str, default='swp', help="Task name is required in BIDS")
+exp_args.add_argument("--num-runs", type=int, default=6, help="Number of runs to process (default: 1)")
 
 # Contrast Arguments Group
 contrast_args = parser.add_argument_group("Contrast Arguments")
 contrast_args.add_argument("--contrast-file", type=str, default="contrasts.json", help="Path to the contrast file (default: contrasts.json)")
-contrast_args.add_argument("--contrast-name", type=str, default="loc_writing_vs_rest", help="Name of the contrast to analyze (default: vis_aud)")
+contrast_args.add_argument("--contrast-name", type=str, default="viz_gt_aud", help="Name of the contrast to analyze (default: vis_aud)")
 
 # Statistical Thresholding Arguments Group
 stat_args = parser.add_argument_group("Statistical Thresholding Arguments")
@@ -71,6 +71,7 @@ plot_diagnostic_images_to_file(exp_params,
                                 args.path2root)
 
 # FIT MODEL: GLM
+glm_params['smoothing_fwhm'] = 3.0  # Example smoothing parameter, adjust as needed
 model_glm = fit_GLM(exp_params,
                     dict_BIDS_data['fns_func'],
                     dict_BIDS_data['dfs_events'],
@@ -78,7 +79,6 @@ model_glm = fit_GLM(exp_params,
                     glm_params,
                     args.path2root,
                     save_model=True)
-
 # Plot the design matrix
 plot_design_matrix_to_file(model_glm, exp_params, args.path2root)
 
@@ -88,7 +88,11 @@ manager = ContrastManager(args.contrast_file)
 
 # Retrieve a contrast
 contrast = manager.get_contrast(args.contrast_name)
-        
+
+# Hack to ensure the contrast weights are the same length as the design matrix
+if len(contrast['weights']) < model_glm.design_matrices_[0].shape[1]:
+    contrast['weights'] += [0] * (model_glm.design_matrices_[0].shape[1] - len(contrast['weights']))
+
 # Plot the contrast
 plot_contrast(exp_params,  # Use exp_params for subject/session/task
               model_glm, args.contrast_name, contrast['weights'],
