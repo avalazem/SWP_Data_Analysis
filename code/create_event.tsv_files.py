@@ -118,7 +118,7 @@ def create_main_event_files(RUN_DIR, SUBJECT_ID, RUN_NUM):
     output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
-    # event_df.to_csv(output_path, sep='\t', index=False)
+    event_df.to_csv(output_path, sep='\t', index=False)
     # Also save a copy to the event_tsvs directory
     EVENT_TSVS_DIR.mkdir(exist_ok=True)
     event_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
@@ -168,7 +168,7 @@ def create_visual_localizer_event_files(CSV_PATH, SUBJECT_ID):
     output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
-    # visual_stim_df.to_csv(output_path, sep='\t', index=False)
+    visual_stim_df.to_csv(output_path, sep='\t', index=False)
     # Also save a copy to the event_tsvs directory
     EVENT_TSVS_DIR.mkdir(exist_ok=True)
     visual_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
@@ -203,7 +203,7 @@ def create_auditory_localizer_event_files(CSV_PATH, SUBJECT_ID):
     output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
-    # auditory_stim_df.to_csv(output_path, sep='\t', index=False)
+    auditory_stim_df.to_csv(output_path, sep='\t', index=False)
     # Also save a copy to the event_tsvs directory
     EVENT_TSVS_DIR.mkdir(exist_ok=True)
     auditory_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
@@ -254,7 +254,7 @@ def create_hand_localizer_event_files(CSV_PATH, SUBJECT_ID):
     output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
-    # hand_stim_df.to_csv(output_path, sep='\t', index=False)
+    hand_stim_df.to_csv(output_path, sep='\t', index=False)
     # Also save a copy to the event_tsvs directory
     EVENT_TSVS_DIR.mkdir(exist_ok=True)
     hand_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
@@ -305,7 +305,7 @@ def create_speech_localizer_event_files(CSV_PATH, SUBJECT_ID):
     output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
-    # speech_stim_df.to_csv(output_path, sep='\t', index=False)
+    speech_stim_df.to_csv(output_path, sep='\t', index=False)
     # Also save a copy to the event_tsvs directory
     EVENT_TSVS_DIR.mkdir(exist_ok=True)
     speech_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
