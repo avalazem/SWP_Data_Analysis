@@ -2,6 +2,10 @@ import pandas as pd
 import os
 from pathlib import Path
 
+# Base directory for BIDS output
+BASE_BIDS_DIR = Path("/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/data/derivatives")
+#BASE_BIDS_DIR = Path("/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs")
+
 # Function for condition mappings
 # Extract the trial_type from Condition and Modalities
 
@@ -35,7 +39,7 @@ def build_trial_type_list(df):
 
     
 # Function to create event tsv files from run csvs
-def create_main_event_files(RUN_DIR, DATA_DIR, SUBJECT_ID, RUN_NUM):
+def create_main_event_files(RUN_DIR, SUBJECT_ID, RUN_NUM):
     
     # Load the csv files from the data directory
     event_df = pd.read_csv(os.path.join(RUN_DIR, f'{SUBJECT_ID}_run_{RUN_NUM}.csv'))
@@ -92,8 +96,20 @@ def create_main_event_files(RUN_DIR, DATA_DIR, SUBJECT_ID, RUN_NUM):
     # Print the DataFrame to show the new 'trial_type' column (and others)
     #print(event_df)
     
-    # Define the output path for the tsv file
-    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_run_{RUN_NUM}_events.tsv')
+    # Prepare BIDS compliant path and filename
+    subject_label = SUBJECT_ID.replace('sub', '')
+    if subject_label.isdigit() and len(subject_label) == 1:
+        subject_label = f"0{subject_label}"
+    
+    run_label = RUN_NUM
+    if run_label.isdigit() and len(run_label) == 1:
+        run_label = f"0{run_label}"
+
+    output_dir = BASE_BIDS_DIR / f"sub-{subject_label}" / "ses-1" / "func"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    filename = f"sub-{subject_label}_ses-1_task-swp_run-{run_label}_events.tsv"
+    output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
     event_df.to_csv(output_path, sep='\t', index=False)
@@ -102,7 +118,7 @@ def create_main_event_files(RUN_DIR, DATA_DIR, SUBJECT_ID, RUN_NUM):
     
     
 
-def create_visual_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+def create_visual_localizer_event_files(CSV_PATH, SUBJECT_ID):
     visual_stim_df_raw = pd.read_csv(CSV_PATH)
     
     # Create a new DataFrame with the required columns 
@@ -132,8 +148,16 @@ def create_visual_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     # Reorder columns
     visual_stim_df = visual_stim_df[['onset', 'duration', 'trial_type']]
 
-    # Define the output path for the tsv file
-    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_visual_localizer_events.tsv')
+    # Prepare BIDS compliant path and filename
+    subject_label = SUBJECT_ID.replace('sub', '')
+    if subject_label.isdigit() and len(subject_label) == 1:
+        subject_label = f"0{subject_label}"
+
+    output_dir = BASE_BIDS_DIR / f"sub-{subject_label}" / "ses-1" / "func"
+    os.makedirs(output_dir, exist_ok=True)
+
+    filename = f"sub-{subject_label}_ses-1_task-locvis_events.tsv"
+    output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
     visual_stim_df.to_csv(output_path, sep='\t', index=False)
@@ -141,7 +165,7 @@ def create_visual_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     print(f"Visual localizer event file created: {output_path}")
 
 
-def create_auditory_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+def create_auditory_localizer_event_files(CSV_PATH, SUBJECT_ID):
     auditory_stim_df_raw = pd.read_csv(CSV_PATH)
     
     # Create a new DataFrame with the required columns 
@@ -157,8 +181,16 @@ def create_auditory_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     # If 'onset', 'duration', 'trial_type' are the only columns desired in a specific order:
     auditory_stim_df = auditory_stim_df[['onset', 'duration', 'trial_type']]
 
+    # Prepare BIDS compliant path and filename
+    subject_label = SUBJECT_ID.replace('sub', '')
+    if subject_label.isdigit() and len(subject_label) == 1:
+        subject_label = f"0{subject_label}"
+
+    output_dir = BASE_BIDS_DIR / f"sub-{subject_label}" / "ses-1" / "func"
+    os.makedirs(output_dir, exist_ok=True)
     
-    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_auditory_localizer_events.tsv')
+    filename = f"sub-{subject_label}_ses-1_task-locaudio_events.tsv"
+    output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
     auditory_stim_df.to_csv(output_path, sep='\t', index=False)
@@ -166,7 +198,7 @@ def create_auditory_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     print(f"Auditory localizer event file created: {output_path}")
     
 
-def create_hand_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+def create_hand_localizer_event_files(CSV_PATH, SUBJECT_ID):
     hand_stim_df_raw = pd.read_csv(CSV_PATH)
     # Create a new DataFrame with the required columns
     hand_stim_df = pd.DataFrame()
@@ -189,9 +221,9 @@ def create_hand_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     # Assign duration by row based on trial_type
     def assign_duration(row):
         if row['trial_type'] == 'finger':
-            return 14.0
+            return 16.0
         elif row['trial_type'] == 'write':
-            return 11.0
+            return 10.0
 
     
     hand_stim_df['duration'] = hand_stim_df.apply(assign_duration, axis=1)
@@ -202,15 +234,23 @@ def create_hand_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     # Drop rows with missing trial_type, if any
     hand_stim_df = hand_stim_df.dropna(subset=['trial_type'])
     
+    # Prepare BIDS compliant path and filename
+    subject_label = SUBJECT_ID.replace('sub', '')
+    if subject_label.isdigit() and len(subject_label) == 1:
+        subject_label = f"0{subject_label}"
+
+    output_dir = BASE_BIDS_DIR / f"sub-{subject_label}" / "ses-1" / "func"
+    os.makedirs(output_dir, exist_ok=True)
     
-    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_hand_localizer_events.tsv')
+    filename = f"sub-{subject_label}_ses-1_task-lochand_events.tsv"
+    output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
     hand_stim_df.to_csv(output_path, sep='\t', index=False)
     print(f"Hand localizer event file created: {output_path}")
 
 
-def create_speech_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
+def create_speech_localizer_event_files(CSV_PATH, SUBJECT_ID):
     speech_stim_df_raw = pd.read_csv(CSV_PATH)
     # Create a new DataFrame with the required columns
     speech_stim_df = pd.DataFrame()
@@ -233,7 +273,7 @@ def create_speech_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     # Assign duration by row based on trial_type
     def assign_duration(row):
         if row['trial_type'] == 'hum':
-            return 14.0
+            return 16.0
         elif row['trial_type'] == 'speech':
             return 5.0
 
@@ -246,47 +286,55 @@ def create_speech_localizer_event_files(CSV_PATH, DATA_DIR, SUBJECT_ID):
     # Drop rows with missing trial_type, if any
     speech_stim_df = speech_stim_df.dropna(subset=['trial_type'])
     
+    # Prepare BIDS compliant path and filename
+    subject_label = SUBJECT_ID.replace('sub', '')
+    if subject_label.isdigit() and len(subject_label) == 1:
+        subject_label = f"0{subject_label}"
+
+    output_dir = BASE_BIDS_DIR / f"sub-{subject_label}" / "ses-1" / "func"
+    os.makedirs(output_dir, exist_ok=True)
     
-    output_path = os.path.join(DATA_DIR, f'{SUBJECT_ID}_speech_localizer_events.tsv')
+    filename = f"sub-{subject_label}_ses-1_task-locspeech_events.tsv"
+    output_path = output_dir / filename
     
     # Save the DataFrame to a tsv file
     speech_stim_df.to_csv(output_path, sep='\t', index=False)
     print(f"Speech localizer event file created: {output_path}")
 
-# Run functions as desired
+def create_all_event_files_for_subject(sub_num):
+    """
+    Generate all event files for a given subject
+    Handles zero-padding for single-digit subjects
+    """
+    # Ensure subject number is a string and zero-padded
+    sub_num_str = str(sub_num).zfill(2)
+    subject_id = f"sub{sub_num_str}"
 
+    RUN_DIR = f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/run_csvs/SWP_Pilot_{sub_num}/"
 
-# RUN_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/run_csvs/SWP_Pilot_1/SWP_Pilot_1/main-exp/"
-# DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs"
+    for i in range(1, 7):
+        create_main_event_files(Path(RUN_DIR), SUBJECT_ID=subject_id, RUN_NUM=str(i))
 
-# for i in range(1, 7):
-#     create_main_event_files(Path(RUN_DIR), Path(DATA_DIR), SUBJECT_ID = 'sub01', RUN_NUM = str(i))
+    create_visual_localizer_event_files(
+        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/visual_categories/{subject_id}_vis.csv",
+        SUBJECT_ID=subject_id
+    )
 
+    create_auditory_localizer_event_files(
+        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/audio_categories/{subject_id}_audio.csv",
+        SUBJECT_ID=subject_id
+    )
 
+    create_hand_localizer_event_files(
+        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/hand_categories/{subject_id}_hand.csv",
+        SUBJECT_ID=subject_id
+    )
 
+    create_speech_localizer_event_files(
+        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/speech_categories/{subject_id}_speech.csv",
+        SUBJECT_ID=subject_id
+    )
 
-# create_visual_localizer_event_files(
-#     CSV_PATH = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/visual_categories/sub1_vis.csv",
-#     DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
-#     SUBJECT_ID = 'sub1'
-# )
-
-# create_auditory_localizer_event_files(
-#     CSV_PATH = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/audio_categories/sub1_audio.csv",
-#     DATA_DIR = r"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
-#     SUBJECT_ID = 'sub1'
-# )
-
-# create_hand_localizer_event_files(
-#     CSV_PATH = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/hand_categories/sub1_hand.csv",
-#     DATA_DIR = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
-#     SUBJECT_ID = 'sub1'
-# )
-
-
-# create_speech_localizer_event_files(
-#     CSV_PATH = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_1/localizer/speech_categories/sub1_speech.csv",
-#     DATA_DIR = "/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs",
-#     SUBJECT_ID = 'sub1'
-# )
+# Run the function
+create_all_event_files_for_subject(2)
 

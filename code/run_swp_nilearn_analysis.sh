@@ -13,12 +13,14 @@ subjects=(1 2 3) # Add all subjects here
 
 # Define the tasks and their corresponding parameters
 tasks_info=(
-    "swp,6,long_vs_short_vis"
-    "swp,6,viz_gt_aud"
+    #"swp,6,long_vs_short_vis"
+    #"swp,6,viz_gt_aud"
     "locvis,0,locvis:words_vs_rest"
-    "locaudio,0,locaud:words_vs_rest" # Assumed num_runs is 0, adjust if needed
-    "lochand,0,lochand:writing_vs_rest" # Assumed num_runs is 0, adjust if needed
-    "locspeech,0,locspeech:speech_vs_rest" # Assumed num_runs is 0, adjust if needed
+    "locvis,0,locvis:emojis_vs_rest"
+    "locvis,0,locvis:emojis_vs_others"
+    #"locaudio,0,locaud:words_vs_rest" # Assumed num_runs is 0, adjust if needed
+    #"lochand,0,lochand:writing_vs_rest" # Assumed num_runs is 0, adjust if needed
+    #"locspeech,0,locspeech:speech_vs_rest" # Assumed num_runs is 0, adjust if needed
 )
 # Note: For tasks other than 'swp', the number of runs is set to 0.
 # You can modify the tasks_info array to be more flexible if needed.
@@ -43,8 +45,9 @@ for subject in "${subjects[@]}"; do
             echo "Running analysis for Subject: $subject, Task: $task_name, Alpha: $alpha_val"
             echo "----------------------------------------------------"
 
+
             # The command to run the python script with all the variables
-            python3 swp_nilearn-analysis.py \
+            python3 main_fMRI_analysis.py \
                 --subject "$subject" \
                 --task "$task_name" \
                 --num-runs "$num_runs" \

@@ -6,6 +6,8 @@ from nilearn.plotting import plot_glass_brain
 from nilearn.plotting import view_img_on_surf
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.utils.validation import check_is_fitted, NotFittedError
+from nilearn.plotting import plot_img_on_surf
 
 from viz import plot_design_matrix_to_file, plot_contrast_matrix_to_file
 
@@ -14,59 +16,86 @@ from nilearn.glm.first_level import FirstLevelModel
 
 
 # Main first-level analysis function for a single subject, multiple runs (concatenated), and contrast
-
 def fit_GLM(exp_args, fns_func, dfs_events, dfs_confounds,
-            glm_params, path2root, save_model=True): # Added run_ids
+            glm_params, path2root, save_model=True):
     """
     Performs first-level fMRI analysis for a given subject, concatenating specified runs, for a given contrast.
     """
     # build file and folder names based on experiment arguments
     subject_id, session, task = exp_args['subject'], exp_args['session'], exp_args['task']
-    fn_base = f"sub-{subject_id:02d}_ses-{session}_task-{task}"
+    
+    if isinstance(subject_id, list):
+    # If it's a list, join the formatted subject IDs
+        subject_ids_str = "_".join([f"{sub:02d}" for sub in subject_id])
+    else:
+        # If it's a single integer, format it directly
+        subject_ids_str = f"{subject_id:02d}"
+    fn_base = f"sub-{subject_ids_str}_ses-{session}_task-{task}"
+
     path2output = os.path.join(path2root, "output", "glm_models")
     fn_glm = f'glm_{fn_base}.pkl'  # Use the first functional file name for GLM
     
-    # check if the GLM model already exists and load it if so
     fmri_glm_file = os.path.join(path2output, fn_glm)
+
+    needs_fitting = False
+
     if os.path.exists(fmri_glm_file):
         print(f"GLM model already exists at {fmri_glm_file}. Loading existing model...")
         with open(fmri_glm_file, 'rb') as f:
             fmri_glm = pickle.load(f)
-        return fmri_glm    
+        
+        try:
+            check_is_fitted(fmri_glm)
+            print("  Loaded model is already fitted.")
+        except NotFittedError:
+            print("  WARNING: Loaded model is not fitted. It will be re-fitted.")
+            needs_fitting = True
+    else:
+        print("No existing GLM model found. Creating and fitting a new one.")
+        fmri_glm = FirstLevelModel(**glm_params)
+        needs_fitting = True
 
-    # Fit GLM (fit_glm_model should accept lists of func_files, events_dfs), and confound_dfs_list
-    print("Fitting GLM model...")
-    fmri_glm = FirstLevelModel(**glm_params)
-    fmri_glm.fit(fns_func, dfs_events, dfs_confounds)
-    print("  GLM fitting complete. Design matrix extracted.")
-
-    if save_model:
-        # Create output directory if it doesn't exist
-        
-        os.makedirs(path2output, exist_ok=True)
-        
-        # Save the fitted model
-        with open(fmri_glm_file, 'wb') as f:
-            pickle.dump(fmri_glm, f)
-        
-        print(f"Fitted GLM model saved to {fmri_glm_file}")
+    if needs_fitting:
+        # Fit GLM (re-fit if loaded, as pickle can be unreliable for fitted state)
+        print("Fitting GLM model...")
+        fmri_glm.fit(fns_func, dfs_events, dfs_confounds)
+        print("  GLM fitting complete.")
+        if save_model:
+            # Create output directory if it doesn't exist
+            os.makedirs(path2output, exist_ok=True)
+            # Save the fitted model
+            with open(fmri_glm_file, 'wb') as f:
+                pickle.dump(fmri_glm, f)
+            print(f"Fitted GLM model saved to {fmri_glm_file}")
 
     return fmri_glm
    
 def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
                    mean_func_img, path2root,
-                     current_alpha=0.05, cluster_threshold=10, save_plots=True):
+                    threshold_z=3.1,
+                    cluster_threshold=10,
+                    save_plots=True):
     """
     Plots the contrast for the fitted GLM model.
     """
     # build file and folder names based on experiment arguments
     subject_id, session, task = exp_args['subject'], exp_args['session'], exp_args['task']
-    fn_base = f"contrast-{contrast_name}_sub-{subject_id:02d}_ses-{session}_task-{task}"
-    print("Plotting diagnostic images...")
-    folder_figures = os.path.join(path2root,
-                                   "figures",
-                                   f"sub-{subject_id:02d}_ses-{session}",
-                                     "contrasts")
+
+    if isinstance(subject_id, list):
+        subject_ids_str = "_".join([f"{sub:02d}" for sub in subject_id])
+        fn_base = f"contrast-{contrast_name}_sub-{subject_ids_str}_ses-{session}_task-{task}"
+        folder_figures = os.path.join(path2root,
+                                      "figures",
+                                      f"sub-{subject_ids_str}_ses-{session}",
+                                      "contrasts")
+    else:
+        fn_base = f"contrast-{contrast_name}_sub-{subject_id:02d}_ses-{session}_task-{task}"
+        folder_figures = os.path.join(path2root,
+                                      "figures",
+                                      f"sub-{subject_id:02d}_ses-{session}",
+                                      "contrasts")
+    
+    print("Plotting images...") 
     os.makedirs(folder_figures, exist_ok=True)
     print(f"  Saving Contrast images to {folder_figures}...")
 
@@ -85,29 +114,19 @@ def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
     z_map = fmri_glm.compute_contrast(contrast_vector, output_type="z_score")
     print(f"  Z-map computed for contrast: {contrast_name}")
 
-    # Threshold the z-map
-    print(f"  Thresholding z-map with alpha={current_alpha}, cluster_threshold={cluster_threshold}...")
-    
-    #clean_map, threshold = threshold_stats_img(
-    #    z_map, 
-    #    alpha=current_alpha, 
-    #    height_control="fdr",
-    #    cluster_threshold=cluster_threshold, 
-    #   two_sided=True,
-    #)
-
-    clean_map, threshold = z_map, 3.1
-    print(f"  Thresholded map generated. Threshold value: {threshold:.3f}")
-
+    #fdr_corrected_map, threshold = threshold_stats_img(...alpha..)
     # Plot stat map
     stat_map_plotting_config = {"bg_img": mean_func_img, 
                                 "display_mode": "z", 
                                 "cut_coords": 3, 
-                                "black_bg": True}
-    title_stat_map = (f"{contrast_name} (p<{current_alpha:.3f} FDR; thresh: {threshold:.3f}; clusters > {cluster_threshold} voxels)")
+                                "black_bg": True,
+                                "symmetric_cbar": True,
+                                "cmap": "cold_hot"}
     
-    stat_map_filepath = os.path.join(folder_figures, f"stat_map_alpha{current_alpha}_{fn_base}.png")
-    plot_stat_map(clean_map, threshold=threshold, 
+    title_stat_map = (f"{contrast_name} (thresh: {threshold_z:.3f}; clusters > {cluster_threshold} voxels)")
+    
+    stat_map_filepath = os.path.join(folder_figures, f"stat_map_threshold_z_{threshold_z}_{fn_base}.png")
+    plot_stat_map(z_map, threshold=threshold_z, 
                   title=title_stat_map,
                   figure=plt.figure(figsize=(10, 4)), 
                   output_file=stat_map_filepath,
@@ -124,21 +143,37 @@ def plot_contrast(exp_args, fmri_glm, contrast_name, contrast_vector,
                                    "draw_cross": False, 
                                    "black_bg": False}
     
-    fn_glass_brain = f"glass_brain_alpha{current_alpha}_{fn_base}.png"
+    fn_glass_brain = f"glass_brain_threshold_z_{threshold_z}_{fn_base}.png"
     glass_brain_filepath = os.path.join(folder_figures, fn_glass_brain)
-    plot_glass_brain(clean_map, threshold=threshold, 
+    plot_glass_brain(z_map, threshold=threshold_z, 
                      title=title_stat_map,
                      output_file=glass_brain_filepath,
                      **glass_brain_plotting_config)
     print(f"  Glass brain plot saved to {glass_brain_filepath}")
 
 
-    fn_surf_brain = f"surf_brain_alpha{current_alpha}_{fn_base}.png"
+    fn_surf_brain = f"surf_brain_threshold_z_{threshold_z}_{fn_base}.png"
+    
+    plot_img_on_surf(
+    stat_map=z_map,
+    views=["lateral", "medial"],
+    hemispheres=["left", "right"],
+    bg_on_data=True,
+    threshold=threshold_z,
+    colorbar=True,
+    cmap='cold_hot',
+    inflate=True,
+    output_file=os.path.join(folder_figures, f"{fn_surf_brain}.png"))
+    
     surf_brain_filepath = os.path.join(folder_figures, fn_surf_brain)
-    view=view_img_on_surf(clean_map, 
-                     threshold='90%',
+    view=view_img_on_surf(z_map, 
+                     threshold=threshold_z,
                      surf_mesh='fsaverage')
     
     view.save_as_html(f"{surf_brain_filepath}.html")
+
+
+    
+    
     plt.close('all')
 

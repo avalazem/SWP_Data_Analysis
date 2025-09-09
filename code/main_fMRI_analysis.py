@@ -16,20 +16,21 @@ parser = argparse.ArgumentParser(description="Process fMRI data for a single sub
 
 # General Processing Arguments Group
 exp_args = parser.add_argument_group("General Processing Arguments")
-exp_args.add_argument("--subject", type=int, default=2, help="Subject number (e.g., 1)")
+exp_args.add_argument("--subject", type=int, default=3, help="Subject number (e.g., 1)")
 exp_args.add_argument("--session", type=int, default=1, help="Session number (e.g., 1)")
-exp_args.add_argument("--task", type=str, default='swp', help="Task name is required in BIDS")
+exp_args.add_argument("--task", type=str, default='swp', help="Task name is required in BIDS, e.g., 'swp'")
 exp_args.add_argument("--num-runs", type=int, default=6, help="Number of runs to process (default: 1)")
 
 # Contrast Arguments Group
 contrast_args = parser.add_argument_group("Contrast Arguments")
 contrast_args.add_argument("--contrast-file", type=str, default="contrasts.json", help="Path to the contrast file (default: contrasts.json)")
-contrast_args.add_argument("--contrast-name", type=str, default="viz_gt_aud", help="Name of the contrast to analyze (default: vis_aud)")
+contrast_args.add_argument("--contrast-name", type=str, default="aud_gt_viz", help="Name of the contrast to analyze (default: vis_aud)")
 
 # Statistical Thresholding Arguments Group
 stat_args = parser.add_argument_group("Statistical Thresholding Arguments")
-stat_args.add_argument("--alpha", type=float, default=0.2, help="Alpha level for statistical thresholding (default: 0.05)")
-stat_args.add_argument("--cluster-threshold", type=int, default=10, help="Cluster size threshold for statistical maps (default: 10)")
+stat_args.add_argument("--threshold_z", type=float, default=3.1, help="Alpha level for statistical thresholding (default: 0.05)")
+stat_args.add_argument("--alpha", type=float, default=0.05, help="Alpha level for statistical thresholding (default: 0.05)")
+stat_args.add_argument("--cluster-threshold", type=int, default=1, help="Cluster size threshold for statistical maps (default: 10)")
 
 # Path Arguments Group
 path_args = parser.add_argument_group("Path Arguments")
@@ -54,6 +55,7 @@ for action_exp, action_glm in zip(exp_args._group_actions, glm_args._group_actio
     if hasattr(args, action_glm.dest):
         glm_params[action_glm.dest] = getattr(args, action_glm.dest)
 
+n_subjects = 1 if isinstance(exp_params['subject'], int) else len(exp_params['subject'])
 confound_columns = ['trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
 
 # LOAD DATA - Anatomy, functional and events
@@ -66,7 +68,7 @@ dict_BIDS_data = load_BIDS_data(exp_params,
 # Plot diagnostic images
 mean_func_img = mean_img(dict_BIDS_data["fns_func"][0], copy_header=True)
 plot_diagnostic_images_to_file(exp_params,
-                               mean_func_img,
+                               [mean_func_img]*n_subjects,
                                 dict_BIDS_data["fn_anat"],
                                 args.path2root)
 
@@ -98,5 +100,5 @@ plot_contrast(exp_params,  # Use exp_params for subject/session/task
               model_glm, args.contrast_name, contrast['weights'],
               mean_func_img,
               args.path2root,
-              args.alpha, args.cluster_threshold,
+              args.threshold_z, args.cluster_threshold,
               save_plots=True)

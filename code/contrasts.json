@@ -3,15 +3,14 @@
       "task": "swp",
       "name": "Audiotory > Visual",
       "weights": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-      "description": "Contrast comparing visual and auditory conditions",
-      "colors": ["blue", "red"]
+      "description": "Contrast comparing visual and auditory conditions"
     },
     "viz_gt_aud": {
       "task": "swp",
       "name": "Visual > Audiotory",
       "weights": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       "description": "Contrast comparing visual and auditory conditions",
-      "colors": ["blue", "red"]
+      "colors": ["red", "blue"]
     },
     "long_vs_short_vis": {
       "task": "swp",
@@ -34,7 +33,7 @@
       "description": "Contrast comparing visual and auditory conditions",
       "colors": ["blue", "red"]
     },
-    "locaud:real_gt_pseudo": {
+    "real_gt_pseudo": {
         "task": "swp",
         "name": "Real > Pseudo Auditory",
         "weights": [-1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -58,7 +57,21 @@
     "locvis:emojis_vs_faces": {
       "task": "locvis",
       "name": "Localizer Words vs Faces Visual",
+      "weights": [0, 1, -1, 0, 0],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+    "locvis:emojis_vs_others": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
       "weights": [-1, 4, -1, -1, -1],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+    "locvis:emojis_vs_rest": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
+      "weights": [0, 1, 0, 0, 0],
       "description": "Contrast comparing stimulation conditions against baseline",
       "colors": ["green", "grey"]
     },
@@ -89,5 +102,12 @@
       "weights": [-1, 1],
       "description": "Contrast comparing speech against humming in auditory conditions",
       "colors": ["blue", "red"]
+    },
+    "locaud:words_vs_scrambledwords": {
+      "task": "locaudio",
+      "name": "Localizer Words vs Scrambled Words Auditory",
+      "weights": [0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
     }
   }
