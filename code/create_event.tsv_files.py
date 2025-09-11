@@ -2,9 +2,10 @@ import pandas as pd
 import os
 from pathlib import Path
 
-# Base directory for BIDS output
-BASE_BIDS_DIR = Path("/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/data/derivatives")
-#BASE_BIDS_DIR = Path("/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/event_tsvs")
+# Base directory for BIDS output (relative to script location)
+SCRIPT_DIR = Path(__file__).parent
+BASE_BIDS_DIR = (SCRIPT_DIR.parent / "data/derivatives")
+EVENT_TSVS_DIR = (SCRIPT_DIR.parent / "event_tsvs")
 
 # Function for condition mappings
 # Extract the trial_type from Condition and Modalities
@@ -43,14 +44,15 @@ def create_main_event_files(RUN_DIR, SUBJECT_ID, RUN_NUM):
     
     # Load the csv files from the data directory
     event_df = pd.read_csv(os.path.join(RUN_DIR, f'{SUBJECT_ID}_run_{RUN_NUM}.csv'))
-    
-    # Create the event_df DataFrame with the required columns
-    # Calculate base onset (start time of each trial)
-    # Initial 5s delay, then cumulative sum of previous trial durations
-    # All times seconds
-    # The term (event_df['Trial Duration'].cumsum() - event_df['Trial Duration'])
-    # gives the sum of durations of all preceding trials
-        
+    """
+    Create the event_df DataFrame with the required columns
+    Calculate base onset (start time of each trial)
+    Initial 5s delay, then cumulative sum of previous trial durations
+    All times seconds
+    The term (event_df['Trial Duration'].cumsum() - event_df['Trial Duration'])
+    gives the sum of durations of all preceding trials
+    """
+     
     # Determine if Input or Output Modalities changed compared to the previous trial
     input_modality_changed = (event_df['Input Modality'] != event_df['Input Modality'].shift(1)).fillna(False)
     output_modality_changed = (event_df['Output Modality'] != event_df['Output Modality'].shift(1)).fillna(False)
@@ -63,7 +65,7 @@ def create_main_event_files(RUN_DIR, SUBJECT_ID, RUN_NUM):
         modality_change_event.iloc[0] = False
     
     # Calculate base onset times (initial 5s delay + sum of previous trial durations)
-    # All times seconds.
+    # All times in seconds.
     # The term (event_df['Trial Duration'].cumsum() - event_df['Trial Duration'])
     # gives the sum of durations of all preceding trials.
     initial_delay = 5
@@ -82,20 +84,24 @@ def create_main_event_files(RUN_DIR, SUBJECT_ID, RUN_NUM):
     # The final 'onset' is the base_onset plus the cumulative penalty from modality changes
     onset_times = base_onset + cumulative_penalties
     event_df['onset'] = onset_times
-    event_df['duration'] = event_df['Trial Duration']
-    #event_df['duration'] = 7.5 # Set a fixed duration of 7.5 seconds for all trials
+    # Assign duration: 9.0 for Write or Type, 4.0 for Speech
+    event_df['duration'] = event_df['Output Modality'].apply(lambda x: 4.0 if x == "Speech" else 9.0 if x in ["Write", "Type"] else 9.0)
     
+    # Correction for subject 1: duration should be 4.0 when onset is 82.0 due to csv error during experiment 
+    if SUBJECT_ID == "sub01":
+        mask = event_df['onset'] == 82.0
+        event_df.loc[mask, 'duration'] = 4.0
     
     # Apply trial_type based on conditions
     trial_type_func = build_trial_type_list(event_df)
     event_df['trial_type'] = event_df.apply(trial_type_func, axis=1)
-    
+
+    # Change 'Type' to 'Write' in the trial_type column for consistency
+    event_df['trial_type'] = event_df['trial_type'].str.replace('type', 'write', case=False)
+
     # Limit the DataFrame to the required columns
     event_df = event_df[['onset', 'duration', 'trial_type']]
 
-    # Print the DataFrame to show the new 'trial_type' column (and others)
-    #print(event_df)
-    
     # Prepare BIDS compliant path and filename
     subject_label = SUBJECT_ID.replace('sub', '')
     if subject_label.isdigit() and len(subject_label) == 1:
@@ -113,7 +119,9 @@ def create_main_event_files(RUN_DIR, SUBJECT_ID, RUN_NUM):
     
     # Save the DataFrame to a tsv file
     event_df.to_csv(output_path, sep='\t', index=False)
-    #print(f"Event file created: {output_path}")
+    # Also save a copy to the event_tsvs directory
+    EVENT_TSVS_DIR.mkdir(exist_ok=True)
+    event_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
     
     
     
@@ -161,7 +169,9 @@ def create_visual_localizer_event_files(CSV_PATH, SUBJECT_ID):
     
     # Save the DataFrame to a tsv file
     visual_stim_df.to_csv(output_path, sep='\t', index=False)
-
+    # Also save a copy to the event_tsvs directory
+    EVENT_TSVS_DIR.mkdir(exist_ok=True)
+    visual_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
     print(f"Visual localizer event file created: {output_path}")
 
 
@@ -194,7 +204,9 @@ def create_auditory_localizer_event_files(CSV_PATH, SUBJECT_ID):
     
     # Save the DataFrame to a tsv file
     auditory_stim_df.to_csv(output_path, sep='\t', index=False)
-    
+    # Also save a copy to the event_tsvs directory
+    EVENT_TSVS_DIR.mkdir(exist_ok=True)
+    auditory_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
     print(f"Auditory localizer event file created: {output_path}")
     
 
@@ -215,13 +227,9 @@ def create_hand_localizer_event_files(CSV_PATH, SUBJECT_ID):
     hand_stim_df.loc[hand_stim_df['trial_type'] != 'finger', 'trial_type'] = 'write'
     
     # Assign duration based on trial_type
-    # ATTN !! Intentionally including cue + fixation due to ambiguity in task design given to subjects
-    # In the future it needs to be clear when the subject is to perform the task and when they are to just look at the screen
-    # first 1 second is included to account for cue duration
-    # Assign duration by row based on trial_type
     def assign_duration(row):
         if row['trial_type'] == 'finger':
-            return 16.0
+            return 10.0
         elif row['trial_type'] == 'write':
             return 10.0
 
@@ -247,6 +255,9 @@ def create_hand_localizer_event_files(CSV_PATH, SUBJECT_ID):
     
     # Save the DataFrame to a tsv file
     hand_stim_df.to_csv(output_path, sep='\t', index=False)
+    # Also save a copy to the event_tsvs directory
+    EVENT_TSVS_DIR.mkdir(exist_ok=True)
+    hand_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
     print(f"Hand localizer event file created: {output_path}")
 
 
@@ -266,14 +277,10 @@ def create_speech_localizer_event_files(CSV_PATH, SUBJECT_ID):
     # Rename all trial_type values that are not 'hum' to 'speech' (i.e., words)
     speech_stim_df.loc[speech_stim_df['trial_type'] != 'hum', 'trial_type'] = 'speech'
     
-    # Assign duration based on trial_type
-    # ATTN !! Intentionally including cue + fixation due to ambiguity in task design given to subjects
-    # In the future it needs to be clear when the subject is to perform the task and when they are to just look at the screen
-    # first 1 second is included to account for cue duration
-    # Assign duration by row based on trial_type
+
     def assign_duration(row):
         if row['trial_type'] == 'hum':
-            return 16.0
+            return 10.0
         elif row['trial_type'] == 'speech':
             return 5.0
 
@@ -299,6 +306,9 @@ def create_speech_localizer_event_files(CSV_PATH, SUBJECT_ID):
     
     # Save the DataFrame to a tsv file
     speech_stim_df.to_csv(output_path, sep='\t', index=False)
+    # Also save a copy to the event_tsvs directory
+    EVENT_TSVS_DIR.mkdir(exist_ok=True)
+    speech_stim_df.to_csv(EVENT_TSVS_DIR / filename, sep='\t', index=False)
     print(f"Speech localizer event file created: {output_path}")
 
 def create_all_event_files_for_subject(sub_num):
@@ -310,31 +320,34 @@ def create_all_event_files_for_subject(sub_num):
     sub_num_str = str(sub_num).zfill(2)
     subject_id = f"sub{sub_num_str}"
 
-    RUN_DIR = f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/fMRI_Data_Analysis/run_csvs/SWP_Pilot_{sub_num}/"
+    RUN_DIR = (SCRIPT_DIR.parent / f"run_csvs/SWP_Pilot_{sub_num}/").resolve()
 
     for i in range(1, 7):
         create_main_event_files(Path(RUN_DIR), SUBJECT_ID=subject_id, RUN_NUM=str(i))
 
     create_visual_localizer_event_files(
-        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/visual_categories/{subject_id}_vis.csv",
+        CSV_PATH=(SCRIPT_DIR.parent / f"run_csvs/SWP_Pilot_{sub_num}/{subject_id}_vis.csv"),
         SUBJECT_ID=subject_id
     )
 
     create_auditory_localizer_event_files(
-        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/audio_categories/{subject_id}_audio.csv",
+        CSV_PATH=(SCRIPT_DIR.parent / f"run_csvs/SWP_Pilot_{sub_num}/{subject_id}_audio.csv"),
         SUBJECT_ID=subject_id
     )
 
     create_hand_localizer_event_files(
-        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/hand_categories/{subject_id}_hand.csv",
+        CSV_PATH=(SCRIPT_DIR.parent / f"run_csvs/SWP_Pilot_{sub_num}/{subject_id}_hand.csv"),
         SUBJECT_ID=subject_id
     )
 
     create_speech_localizer_event_files(
-        CSV_PATH=f"/home/avalazem/Desktop/Work/Single_Word_Processing_Stage/SWP_Pilot_{sub_num}/localizer/speech_categories/{subject_id}_speech.csv",
+        CSV_PATH=(SCRIPT_DIR.parent / f"run_csvs/SWP_Pilot_{sub_num}/{subject_id}_speech.csv"),
         SUBJECT_ID=subject_id
     )
 
-# Run the function
+# Run the function for subjects 1, 2, and 3
+create_all_event_files_for_subject(1)
 create_all_event_files_for_subject(2)
+create_all_event_files_for_subject(3)
+
 
