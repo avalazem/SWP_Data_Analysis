@@ -1,0 +1,119 @@
+{
+    "aud_gt_viz|speech": {
+      "task": "swp",
+      "name": "Audiotory > Visual",
+      "weights": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast comparing visual and auditory conditions"
+    },
+    "aud_gt_viz": {
+      "task": "swp",
+      "name": "Audiotory > Visual",
+      "weights": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+      "description": "Contrast comparing visual and auditory conditions"
+    },
+    "viz_gt_aud": {
+      "task": "swp",
+      "name": "Visual > Audiotory",
+      "weights": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      "description": "Contrast comparing visual and auditory conditions",
+      "colors": ["red", "blue"]
+    },
+    "long_vs_short_vis": {
+      "task": "swp",
+      "name": "Long vs Short Visual",
+      "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast comparing visual and auditory conditions",
+      "colors": ["blue", "red"]
+    },
+    "long_vs_short_vis_speech": {
+      "task": "swp",
+      "name": "Long vs Short Visual",
+      "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast comparing visual and auditory conditions",
+      "colors": ["blue", "red"]
+    },
+    "long_vs_short_vis_writing": {
+      "task": "swp",
+      "name": "Long vs Short Visual",
+      "weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, -1, -1, 1, 1, 1, 1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast comparing visual and auditory conditions",
+      "colors": ["blue", "red"]
+    },
+    "real_gt_pseudo": {
+        "task": "swp",
+        "name": "Real > Pseudo Auditory",
+        "weights": [-1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "description": "Contrast comparing auditory conditions greater than visual conditions",
+        "colors": ["red", "blue"]
+    },
+    "locvis:words_vs_others": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
+      "weights": [-1, -1, -1, -1, 4],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+    "locvis:words_vs_rest": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
+      "weights": [0, 0, 0, 0, 1],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+    "locvis:emojis_vs_faces": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
+      "weights": [0, 1, -1, 0, 0],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+    "locvis:emojis_vs_others": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
+      "weights": [-1, 4, -1, -1, -1],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+    "locvis:emojis_vs_rest": {
+      "task": "locvis",
+      "name": "Localizer Words vs Faces Visual",
+      "weights": [0, 1, 0, 0, 0],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+      "locaud:words_vs_others": {
+        "task": "locaudio",
+        "name": "Localizer Words vs Faces Auditory",
+        "weights": [-1, -1, -1, 4],
+        "description": "Contrast comparing stimulation conditions against baseline",
+        "colors": ["green", "grey"]
+    },
+      "locaudio:words_vs_rest": {
+      "task": "locaudio",
+      "name": "Localizer Words vs Faces Auditory",
+      "weights": [0, 0, 0, 1],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    },
+      "locspeech:speech_vs_rest": {
+        "task": "locspeech",
+        "name": "Localizer Speech vs Humming",
+        "weights": [-1, 1],
+        "description": "Contrast comparing speech against humming in auditory conditions",
+        "colors": ["blue", "red"]
+    },
+    "lochand:writing_vs_rest": {
+      "task": "lochand",
+      "name": "Localizer",
+      "weights": [-1, 1],
+      "description": "Contrast comparing speech against humming in auditory conditions",
+      "colors": ["blue", "red"]
+    },
+    "locaud:words_vs_scrambledwords": {
+      "task": "locaudio",
+      "name": "Localizer Words vs Scrambled Words Auditory",
+      "weights": [0, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "description": "Contrast comparing stimulation conditions against baseline",
+      "colors": ["green", "grey"]
+    }
+  }
